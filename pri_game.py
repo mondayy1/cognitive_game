@@ -12,31 +12,31 @@ class PRIGame:
         
         # 문제 리스트 (행렬 형식과 정답)
         self.questions = [
-            ([
+            [
                 ['1', '2', '3'],
-                ['4', '5', '?'],
+                ['4', '5', '6'],
                 ['7', '8', '9']
-            ], '6'),  # 정답은 6
-            ([
+            ],
+            [
                 ['A', 'B', 'C'],
-                ['D', 'E', '?'],
+                ['D', 'E', 'F'],
                 ['G', 'H', 'I']
-            ], 'F'),  # 정답은 F
-            ([
+            ],
+            [
                 ['X', 'Y', 'Z'],
-                ['P', 'Q', '?'],
+                ['P', 'Q', 'W'],
                 ['R', 'S', 'T']
-            ], 'W'),  # 정답은 W
-            ([
+            ],  
+            [
                 ['10', '20', '30'],
-                ['40', '50', '?'],
+                ['40', '50', '60'],
                 ['70', '80', '90']
-            ], '60'),  # 정답은 60
-            ([
+            ],
+            [
                 ['Red', 'Blue', 'Green'],
-                ['Yellow', 'Purple', '?'],
+                ['Yellow', 'Purple', 'Brown'],
                 ['Orange', 'Pink', 'Black']
-            ], 'Brown')  # 정답은 Brown
+            ]
         ]
         
     def run(self):
@@ -44,12 +44,18 @@ class PRIGame:
         start_time = time.time()
 
         for _ in range(self.total_questions):
+            matrix = random.choice(self.questions)
             # 랜덤으로 문제를 선택
-            matrix, answer = random.choice(self.questions)
+            answer_row = random.randint(0, 3)
+            answer_col = random.randint(0, 3)
+            
+            # 랜덤하게 ?의 위치를 바꿔서 정답 위치 결정
+            question_matrix, answer = self.randomize_question(matrix, answer_row, answer_col)
+
             self.screen.fill((255, 255, 255))  # 화면을 흰색으로 초기화
 
             # 행렬 그리기
-            self.show_matrix(matrix)
+            self.show_matrix(question_matrix)
             
             # 사용자 입력 받기
             user_answer = self.get_user_input()
@@ -63,9 +69,11 @@ class PRIGame:
                 result_text = "Wrong!"
                 result_color = (255, 0, 0)  # 빨간색
 
-            # 결과 텍스트 화면에 표시
+            print(answer)
+
+            # 결과 텍스트 화면에 표시 (결과는 좀 더 위에 배치)
             result_surface = self.font.render(result_text, True, result_color)
-            self.screen.blit(result_surface, (100, 350))  # 결과는 좀 더 아래에 배치
+            self.screen.blit(result_surface, (200, 450))  # 결과는 화면 위쪽에 배치
             pygame.display.flip()
             pygame.time.wait(1000)  # 1초 동안 결과 표시
 
@@ -81,8 +89,8 @@ class PRIGame:
     def show_matrix(self, matrix):
         """3x3 행렬을 화면에 표시하는 함수"""
         cell_size = 100  # 각 셀 크기
-        x_offset = 100  # 행렬 시작 x 좌표
-        y_offset = 100  # 행렬 시작 y 좌표
+        x_offset = 250  # 행렬 시작 x 좌표 (화면 가운데 오른쪽으로 조정)
+        y_offset = 150  # 행렬 시작 y 좌표
         spacing = 10  # 셀 간격
 
         for row_idx, row in enumerate(matrix):
@@ -94,6 +102,17 @@ class PRIGame:
                 self.screen.blit(item_text, (x_pos, y_pos))
         
         pygame.display.flip()
+
+    def randomize_question(self, matrix, answer):
+        """문제에서 ?의 위치를 랜덤하게 변경하고 정답의 위치를 반환하는 함수"""
+        random_pos = random.choice([(i, j) for i in range(3) for j in range(3)])  # 3x3 행렬에서 랜덤 위치 선택
+        answer_matrix = [row[:] for row in matrix]  # 원본 행렬 복사
+
+        # 정답을 랜덤한 위치에 배치
+        row, col = random_pos
+        question_matrix[row][col] = answer
+
+        return question_matrix, (row, col)
 
     def get_user_input(self):
         """사용자가 차례대로 숫자를 입력하도록 받는 함수"""
@@ -114,10 +133,10 @@ class PRIGame:
                     else:
                         user_text += event.unicode  # 입력한 글자를 추가
             
-            # 입력한 텍스트 화면에 실시간으로 표시 (위치를 좀 더 아래로 이동)
-            self.screen.fill((255, 255, 255), (100, 450, 600, 50))  # 기존 텍스트 지우기, 위치를 아래로 이동
+            # 입력한 텍스트 화면에 실시간으로 표시 (위치를 좀 더 위로 이동)
+            self.screen.fill((255, 255, 255), (100, 500, 600, 50))  # 기존 텍스트 지우기, 위치를 위로 이동
             user_text_surface = self.font.render(user_text, True, (0, 0, 255))
-            self.screen.blit(user_text_surface, (100, 450))  # 텍스트 입력창을 아래쪽에 배치
+            self.screen.blit(user_text_surface, (100, 500))  # 텍스트 입력창을 위쪽에 배치
             pygame.display.flip()
 
         return user_text.strip()

@@ -1,123 +1,110 @@
 import pygame
-import random
-import time
+from random import randrange, shuffle
 
 class WMIGame:
     def __init__(self, screen):
         self.screen = screen
+        self.font = pygame.font.Font(None, 50)
+        self.start_button = pygame.Rect(0, 0, 50, 50) # 시작 버튼
+        self.start_button.center = (120, 120) # 시작 버튼 중심
+        self.number_buttons = [] 
+        self.curr_level = 1
+        self.display_time = None
+        self.start_ticks = None
+        self.start = False
+        self.hidden = False
+        self.running = True
         self.score = 0
-        self.time = 0
-        self.font = pygame.font.Font(None, 36)
-        self.total_questions = 5  # 총 5번의 문제
+
+    # 난이도 조정 
+    def setup(self, level):
+        """게임 설정: 숫자와 시간 초기화"""
+        self.display_time = max(5 - (level // 3), 1)  # 숫자 표시 시간
+        number_count = min((level // 3) + 5, 20) # 숫자 개수 (최대 20개)
+        self.shuffle_grid(number_count) # 숫자 버튼 화면 배치
+
+    def shuffle_grid(self, number_count):
+        """숫자 버튼을 화면에 랜덤으로 배치"""
+        rows, columns = 4, 4  # 행렬 크기를 4x4로 설정
+        cell_size, button_size = 120, 100  # 셀 크기와 버튼 크기 조정
+        screen_left_margin, screen_top_margin = 50, 50  # 여백 조정
+
+
+        grid = [[0 for _ in range(columns)] for _ in range(rows)]
+        number = 1
+
+        while number <= number_count:
+            row_idx, col_idx = randrange(0, rows), randrange(0, columns)
+            if grid[row_idx][col_idx] == 0:
+                grid[row_idx][col_idx] = number
+                center_x = screen_left_margin + (col_idx * cell_size) + (cell_size / 2)
+                center_y = screen_top_margin + (row_idx * cell_size) + (cell_size / 2)
+                button = pygame.Rect(0, 0, button_size, button_size)
+                button.center = (center_x, center_y)
+                self.number_buttons.append(button)
+                number += 1
+
+    def display_start_screen(self):
+        """시작 화면 표시"""
+        pygame.draw.circle(self.screen, (255, 255, 255), self.start_button.center, 60, 5)
+
+
+    def display_game_screen(self):
+        """게임 화면 표시"""
+        if not self.hidden:
+            elapsed_time = (pygame.time.get_ticks() - self.start_ticks) / 1000
+            if elapsed_time > self.display_time:
+                self.hidden = True
+
+        for idx, rect in enumerate(self.number_buttons, start=1):
+            if self.hidden:
+                pygame.draw.rect(self.screen, (255, 255, 255), rect)
+            else:
+                cell_text = self.font.render(str(idx), True, (255, 255, 255))
+                text_rect = cell_text.get_rect(center=rect.center)
+                self.screen.blit(cell_text, text_rect)
+
+    def check_buttons(self, pos):
+        """클릭한 버튼 확인"""
+        if self.start:
+            for button in self.number_buttons:
+                if button.collidepoint(pos):
+                    if button == self.number_buttons[0]:
+                        self.number_buttons.pop(0)
+                        if not self.hidden:
+                            self.hidden = True
+                        if len(self.number_buttons) == 0:
+                            self.curr_level += 1
+                            self.score += 10  # 점수 추가
+                            self.start = False
+                            self.hidden = False
+                            self.setup(self.curr_level)
+                    else:
+                        self.running = False
+                        self.show_game_over()
+                    break
+        elif self.start_button.collidepoint(pos):
+            self.start = True
+            self.start_ticks = pygame.time.get_ticks()
+
+    def show_game_over(self):
+        pygame.display.flip()
+        pygame.time.wait(2000)
 
     def run(self):
-        correct_answers = 0
-        total_attempts = 0
-
-        for question_number in range(1, self.total_questions + 1):
-            # 임의의 숫자 배열 생성 (숫자 4개)
-            sequence = [random.choice(range(1, 10)) for _ in range(4)]
-            correct_sequence = ', '.join(map(str, sequence))
-            
-            # 숫자 배열을 3초간 보여주기
-            self.show_sequence(correct_sequence, correct_answers)
-            
-            # 숫자 배열을 숨기고, 사용자가 입력하도록 유도
-            user_answer = self.get_user_input()
-            
-            # 정답 확인
-            if user_answer == correct_sequence:
-                correct_answers += 1
-                self.score += 10
-                result_text = "Correct!"
-                result_color = (0, 255, 0)
+        """게임 실행"""
+        self.setup(self.curr_level)
+        while self.running:
+            self.screen.fill((0, 0, 0))
+            if self.start:
+                self.display_game_screen()
             else:
-                result_text = "Wrong!"
-                result_color = (255, 0, 0)
-            
-            # 결과 표시
-            self.show_result(result_text, result_color)
-            
-            total_attempts += 1
-            pygame.time.wait(1000)  # 1초간 결과를 표시 후 넘어감
-
-        # 점수 계산
-        self.score = (correct_answers / self.total_questions) * 100  # 정답 비율
-        print(f"Final Score: {self.score}")
-
-    def show_sequence(self, sequence, correct_answers):
-        """3초간 숫자 배열을 보여주는 함수"""
-        self.screen.fill((255, 255, 255))
-        
-        # 숫자 배열 텍스트
-        sequence_text = self.font.render(f"Remember this: {sequence}", True, (0, 0, 0))
-        self.screen.blit(sequence_text, (100, 100))
-
-        # 점수 텍스트
-        score_text = self.font.render(f"Score: {self.score:.2f}", True, (0, 0, 0))
-        self.screen.blit(score_text, (100, 50))
-
-        pygame.display.flip()
-        pygame.time.wait(3000)  # 3초간 보여주기
-
-        self.screen.fill((255, 255, 255))  # 숫자 숨기기
-        pygame.display.flip()
-
-    def get_user_input(self):
-        """사용자가 차례대로 숫자를 입력하도록 받는 함수 (5초 제한)"""
-        start_time = time.time()
-        user_input = []
-        input_active = True
-
-        while input_active:
-            elapsed_time = time.time() - start_time
-            remaining_time = max(0, 5 - elapsed_time)  # 남은 시간 계산
-            self.update_timer(remaining_time)  # 남은 시간 화면에 업데이트
-
-            if elapsed_time >= 5:
-                break  # 5초가 지나면 입력 종료
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:  # Enter를 누르면 입력을 종료
-                        input_active = False
-                    elif event.key == pygame.K_BACKSPACE:
-                        if user_input:
-                            user_input[-1] = user_input[-1][:-1]  # 마지막 숫자 지우기
-                    elif event.key == pygame.K_SPACE:
-                        user_input.append('')  # 스페이스바로 구분된 새로운 숫자 입력 시작
-                    elif event.unicode.isdigit():
-                        if not user_input:  # 첫 번째 숫자 입력시 바로 추가
-                            user_input.append(event.unicode)
-                        else:
-                            user_input[-1] += event.unicode  # 스페이스바로 구분된 숫자에 추가
-
-            # 입력한 텍스트 화면에 실시간으로 표시
-            self.screen.fill((255, 255, 255), (100, 200, 600, 50))  # 기존 텍스트 지우기
-            user_input_text = ' '.join(user_input)
-            user_input_surface = self.font.render(f"Enter the sequence: {user_input_text}", True, (0, 0, 255))
-            self.screen.blit(user_input_surface, (100, 200))
-
-            # 추가: 입력 예시 및 설명을 화면에 표시
-            example_text = self.font.render("Enter numbers separated by spaces", True, (0, 0, 0))
-            self.screen.blit(example_text, (100, 150))
+                self.display_start_screen()
 
             pygame.display.flip()
 
-        return ', '.join(user_input).strip()  # 공백으로 구분된 숫자 입력 문자열로 반환
-
-    def show_result(self, result_text, result_color):
-        """정답/오답에 대한 피드백을 화면에 보여주는 함수"""
-        result_surface = self.font.render(result_text, True, result_color)
-        self.screen.blit(result_surface, (100, 300))
-        pygame.display.flip()
-
-    def update_timer(self, remaining_time):
-        """남은 시간 표시하는 함수"""
-        self.screen.fill((255, 255, 255), (100, 100, 200, 50))  # 기존 타이머 지우기
-        timer_text = self.font.render(f"Time: {remaining_time:.2f}", True, (0, 0, 0))  # 소수점 둘째 자리까지 표시
-        self.screen.blit(timer_text, (100, 100))
-        pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.check_buttons(event.pos)

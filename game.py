@@ -1,10 +1,10 @@
 # main.py
 import pygame
 import sys
-from pri_game import PRIGame  # Assumes PRIGame exists in pri_game.py
-from wmi_game import WMIGame  # Assumes WMIGame exists in wmi_game.py
-from psi_game import PSIGame  # Assumes PSIGame exists in psi_game.py
-from vci_game import VCIGame  # Uncomment if VCIGame is available
+from pri_game import PRIGame
+from wmi_game import WMIGame
+from psi_game import PSIGame
+from vci_game import VCIGame
 
 # Initialize pygame
 pygame.init()

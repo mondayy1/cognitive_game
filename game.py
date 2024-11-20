@@ -65,7 +65,7 @@ def show_instructions():
 def start_game_sequence():
     """Run the sequence of games and display the total score."""
     total_score = 0
-    games = [WMIGame(screen), PSIGame(screen)]  # Add VCIGame if implemented
+    games = [PRIGame(screen)]  # Add VCIGame if implemented
 
     for game in games:
         game.run()

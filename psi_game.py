@@ -17,7 +17,7 @@ class PSIGame:
     def run(self):
         shapes = ["circle", "triangle", "rectangle"]
         correct_answers = 0
-        total_questions = 10
+        total_questions = 5
 
         for question_number in range(1, total_questions + 1):
             target_shape = random.choice(shapes)

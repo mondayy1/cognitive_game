@@ -5,6 +5,7 @@ from pri_game import PRIGame
 from wmi_game import WMIGame
 from psi_game import PSIGame
 from vci_game import VCIGame
+from gptapi import get_diagnosis_gpt
 
 # Initialize pygame
 pygame.init()
@@ -62,21 +63,78 @@ def show_instructions():
                 waiting = False
 
 
+def display_diagnosis(diagnosis, scores):
+    screen.fill(WHITE)
+    # Prepare lines for scores and average reaction time
+    results = [
+        f"Scores:",
+        f"  - PRI: {scores[0]}",
+        f"  - WMI: 70",
+        f"  - PSI: {scores[1]}",
+        f"  - VCI: 90",
+        f"Average Reaction Time: {4.2:.2f} seconds",
+        "",
+        "GPT Diagnosis:",
+    ]
+    
+    # Split GPT diagnosis into multiple lines for readability
+    wrapped_text = []
+    words = diagnosis.split()
+    line = ""
+    for word in words:
+        if len(line) + len(word) + 1 <= 50:  # Assuming 50 characters per line
+            line += word + " "
+        else:
+            wrapped_text.append(line.strip())
+            line = word + " "
+    if line:
+        wrapped_text.append(line.strip())
+
+    results.extend(wrapped_text)
+
+    # Render each line
+    y_offset = 50
+    for line in results:
+        text = small_font.render(line, True, BLACK)
+        screen.blit(text, (50, y_offset))
+        y_offset += 40
+
+    # Display prompt to exit
+    exit_text = small_font.render("Press any key to exit.", True, BLACK)
+    screen.blit(exit_text, (50, y_offset + 40))
+    pygame.display.flip()
+
+    # Wait for user to press any key to exit
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                waiting = False
+
+
 def start_game_sequence():
     """Run the sequence of games and display the total score."""
     total_score = 0
-    games = [PRIGame(screen)]  # Add VCIGame if implemented
+    scores = []
+    games = [PRIGame(screen), PSIGame(screen)]  # Add VCIGame if implemented
 
     for game in games:
         game.run()
-        total_score += game.score
+        scores.append(game.score)
 
-    # Display final score
-    screen.fill(BLACK)
-    score_text = font.render(f"Total Score: {total_score}", True, GREEN)
-    screen.blit(score_text, (300, 250))
-    pygame.display.flip()
-    pygame.time.wait(3000)  # Display final score for 3 seconds
+        # Display final score
+        screen.fill(BLACK)
+        score_text = font.render(f"Total Score: {game.score}", True, GREEN)
+        screen.blit(score_text, (300, 250))
+        pygame.display.flip()
+        pygame.time.wait(1000)
+
+    # Fetch and display diagnosis
+    diagnosis = get_diagnosis_gpt(pri=scores[0], psi=scores[1])
+    display_diagnosis(diagnosis, scores)
 
 
 def main():
@@ -97,6 +155,8 @@ def main():
                 if (START_BTN_POS[0] <= mouse_pos[0] <= START_BTN_POS[0] + BUTTON_WIDTH and
                         START_BTN_POS[1] <= mouse_pos[1] <= START_BTN_POS[1] + BUTTON_HEIGHT):
                     start_game_sequence()
+                    pygame.quit()
+                    sys.exit()
                 # Check if How to Play button is clicked
                 elif (HOW_TO_PLAY_BTN_POS[0] <= mouse_pos[0] <= HOW_TO_PLAY_BTN_POS[0] + BUTTON_WIDTH and
                       HOW_TO_PLAY_BTN_POS[1] <= mouse_pos[1] <= HOW_TO_PLAY_BTN_POS[1] + BUTTON_HEIGHT):
